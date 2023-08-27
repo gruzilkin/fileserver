@@ -1,9 +1,11 @@
 package com.gruzilkin.fileserver.web;
 
+import com.gruzilkin.common.HelloRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload2.jakarta.JakartaServletFileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,13 +18,19 @@ import java.io.InputStream;
 public class FileController {
     private final Logger log = LoggerFactory.getLogger(FileController.class);
 
-    @RequestMapping(value="/file", method= RequestMethod.POST)
+
+    @Autowired
+    BlockStorageStubFactory clientFactory;
+
+    @RequestMapping(value = "/file", method = RequestMethod.POST)
     public @ResponseBody String upload(HttpServletRequest request) throws IOException {
         boolean isMultipart = JakartaServletFileUpload.isMultipartContent(request);
         if (!isMultipart) {
             log.info("not multipart request");
             return "not multipart request";
         }
+
+        var blockStorageClient = clientFactory.getBlockStorage();
 
         // Create a new file upload handler
         JakartaServletFileUpload upload = new JakartaServletFileUpload();
@@ -38,6 +46,12 @@ public class FileController {
                     log.info("Read block " + blockId + " with size " + bytes.length);
                     bytes = stream.readNBytes(100 * 1024 * 1024);
                     blockId += 1;
+                    HelloRequest helloRequest = HelloRequest.newBuilder()
+                            .setFirstName(String.valueOf(blockId))
+                            .setLastName(String.valueOf(bytes.length))
+                            .build();
+                    var helloResponse = blockStorageClient.hello(helloRequest);
+                    log.info(helloResponse.toString());
                 }
 
                 log.info("File field " + name + " with file name " + item.getName() + " detected.");
