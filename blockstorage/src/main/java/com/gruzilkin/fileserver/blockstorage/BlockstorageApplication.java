@@ -12,7 +12,7 @@ public class BlockstorageApplication {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		var context = SpringApplication.run(BlockstorageApplication.class, args);
-		Server server = ServerBuilder.forPort(9001)
+		Server server = ServerBuilder.forPort(9090)
 				.addService(context.getBean(BlockStorageService.class))
 				.build();
 
