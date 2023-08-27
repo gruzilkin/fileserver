@@ -9,12 +9,6 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <parent>
-        <groupId>com.gruzilkin.modules</groupId>
-        <artifactId>modules</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-    </parent>
-
     <dependencies>
         <dependency>
             <groupId>io.grpc</groupId>
