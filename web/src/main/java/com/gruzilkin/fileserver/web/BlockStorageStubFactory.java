@@ -1,6 +1,6 @@
 package com.gruzilkin.fileserver.web;
 
-import com.gruzilkin.common.HelloServiceGrpc;
+import com.gruzilkin.common.BlockStorageServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +16,7 @@ public class BlockStorageStubFactory {
     }
 
 
-    public HelloServiceGrpc.HelloServiceBlockingStub getBlockStorage() {
-        return HelloServiceGrpc.newBlockingStub(managedChannel);
+    public BlockStorageServiceGrpc.BlockStorageServiceBlockingStub getBlockStorage() {
+        return BlockStorageServiceGrpc.newBlockingStub(managedChannel);
     }
 }
