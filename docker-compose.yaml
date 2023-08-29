@@ -1,12 +1,23 @@
 version: '3.8'
 
 services:
+  cassandra:
+    image: cassandra:4
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=fileserver
+
   blockstorage:
     build:
       dockerfile: blockstorage.dockerfile
     ports:
       - "9090:9090"
+    environment:
+      - CASSANDRA_CONTACT_POINTS=cassandra
     restart: always
+    depends_on:
+      - cassandra
 
   web:
     build:
@@ -16,3 +27,5 @@ services:
     environment:
       - BLOCK_STORAGE_HOST=blockstorage
     restart: always
+    depends_on:
+      - blockstorage
