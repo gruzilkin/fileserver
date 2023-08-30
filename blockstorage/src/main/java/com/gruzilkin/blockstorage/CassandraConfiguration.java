@@ -1,4 +1,4 @@
-package com.gruzilkin.fileserver.blockstorage;
+package com.gruzilkin.blockstorage;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +11,7 @@ import org.springframework.data.cassandra.repository.config.EnableCassandraRepos
 import java.util.List;
 
 @Configuration
-@EnableCassandraRepositories(basePackages = "com.gruzilkin.fileserver.blockstorage.data.cassandra.repository")
+@EnableCassandraRepositories(basePackages = "com.gruzilkin.blockstorage.data.cassandra.repository")
 public class CassandraConfiguration extends AbstractCassandraConfiguration {
 
     @Value("${cassandra.contact.points}")

@@ -1,10 +1,10 @@
-package com.gruzilkin.fileserver.blockstorage;
+package com.gruzilkin.blockstorage;
 
+import com.gruzilkin.blockstorage.data.cassandra.Block;
 import com.gruzilkin.common.BlockStorageServiceGrpc;
 import com.gruzilkin.common.SaveRequest;
 import com.gruzilkin.common.SaveResponse;
-import com.gruzilkin.fileserver.blockstorage.data.cassandra.Block;
-import com.gruzilkin.fileserver.blockstorage.data.cassandra.repository.BlockRepository;
+import com.gruzilkin.blockstorage.data.cassandra.repository.BlockRepository;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

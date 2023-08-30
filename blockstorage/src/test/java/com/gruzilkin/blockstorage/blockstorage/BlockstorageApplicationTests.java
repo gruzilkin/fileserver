@@ -1,4 +1,4 @@
-package com.gruzilkin.fileserver.blockstorage.blockstorage;
+package com.gruzilkin.blockstorage.blockstorage;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;

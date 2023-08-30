@@ -57,7 +57,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.gruzilkin.fileserver.blockstorage.BlockstorageApplication</mainClass>
+					<mainClass>com.gruzilkin.blockstorage.BlockstorageApplication</mainClass>
 					<layout>JAR</layout>
 				</configuration>
 				<executions>

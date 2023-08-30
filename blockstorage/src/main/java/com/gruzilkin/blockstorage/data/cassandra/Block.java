@@ -1,4 +1,4 @@
-package com.gruzilkin.fileserver.blockstorage.data.cassandra;
+package com.gruzilkin.blockstorage.data.cassandra;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.cassandra.core.mapping.Table;
