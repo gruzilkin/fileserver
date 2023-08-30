@@ -2,8 +2,8 @@ package com.gruzilkin.blockstorage;
 
 import com.gruzilkin.blockstorage.data.cassandra.Block;
 import com.gruzilkin.common.BlockStorageServiceGrpc;
-import com.gruzilkin.common.SaveRequest;
-import com.gruzilkin.common.SaveResponse;
+import com.gruzilkin.common.BlockSaveRequest;
+import com.gruzilkin.common.BlockSaveResponse;
 import com.gruzilkin.blockstorage.data.cassandra.repository.BlockRepository;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ public class BlockStorageService extends BlockStorageServiceGrpc.BlockStorageSer
     }
 
     @Override
-    public void save(SaveRequest request, StreamObserver<SaveResponse> responseObserver) {
+    public void save(BlockSaveRequest request, StreamObserver<BlockSaveResponse> responseObserver) {
         log.info("Received block of size " + request.getBlockContent().size());
 
         Block newBlock = new Block();
@@ -31,7 +31,7 @@ public class BlockStorageService extends BlockStorageServiceGrpc.BlockStorageSer
         newBlock.setContent(request.getBlockContent().asReadOnlyByteBuffer());
         blockRepository.save(newBlock);
 
-        var response = SaveResponse.newBuilder()
+        var response = BlockSaveResponse.newBuilder()
                 .setBlockId(newBlock.getId().toString())
                 .build();
 

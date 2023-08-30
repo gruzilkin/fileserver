@@ -1,7 +1,7 @@
 package com.gruzilkin.fileserver.web;
 
 import com.google.protobuf.ByteString;
-import com.gruzilkin.common.SaveRequest;
+import com.gruzilkin.common.BlockSaveRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload2.jakarta.JakartaServletFileUpload;
 import org.slf4j.Logger;
@@ -47,11 +47,11 @@ public class FileController {
                     log.info("Read block " + blockId + " with size " + bytes.length);
                     bytes = stream.readNBytes(1 * 1024 * 1024);
                     blockId += 1;
-                    var saveRequest = SaveRequest.newBuilder()
+                    var saveRequest = BlockSaveRequest.newBuilder()
                             .setBlockContent(ByteString.copyFrom(bytes))
                             .build();
-                    var helloResponse = blockStorageClient.save(saveRequest);
-                    log.info("Saved block " + helloResponse.getBlockId());
+                    var saveResponse = blockStorageClient.save(saveRequest);
+                    log.info("Saved block " + saveResponse.getBlockId());
                 }
 
                 log.info("File field " + name + " with file name " + item.getName() + " detected.");

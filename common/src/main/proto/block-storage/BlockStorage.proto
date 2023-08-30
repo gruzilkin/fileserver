@@ -4,14 +4,14 @@ option java_package = "com.gruzilkin.common";
 
 package blockstorage;
 
-message SaveRequest {
+message BlockSaveRequest {
   bytes blockContent = 1;
 }
 
-message SaveResponse {
+message BlockSaveResponse {
   string blockId = 1;
 }
 
 service BlockStorageService {
-  rpc save(SaveRequest) returns (SaveResponse);
+  rpc save(BlockSaveRequest) returns (BlockSaveResponse);
 }
