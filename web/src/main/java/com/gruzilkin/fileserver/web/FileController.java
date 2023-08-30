@@ -2,6 +2,7 @@ package com.gruzilkin.fileserver.web;
 
 import com.google.protobuf.ByteString;
 import com.gruzilkin.common.BlockSaveRequest;
+import com.gruzilkin.common.FileSaveRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload2.jakarta.JakartaServletFileUpload;
 import org.slf4j.Logger;
@@ -14,14 +15,20 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 @Controller
 public class FileController {
     private final Logger log = LoggerFactory.getLogger(FileController.class);
 
+    private final BlockStorageStubFactory blockStorageClientFactory;
 
-    @Autowired
-    BlockStorageStubFactory clientFactory;
+    private final MetaStorageStubFactory metaStorageClientFactory;
+
+    public FileController(BlockStorageStubFactory blockStorageClientFactory, MetaStorageStubFactory metaStorageClientFactory) {
+        this.blockStorageClientFactory = blockStorageClientFactory;
+        this.metaStorageClientFactory = metaStorageClientFactory;
+    }
 
     @RequestMapping(value = "/file", method = RequestMethod.POST)
     public @ResponseBody String upload(HttpServletRequest request) throws IOException {
@@ -31,7 +38,7 @@ public class FileController {
             return "not multipart request";
         }
 
-        var blockStorageClient = clientFactory.getBlockStorage();
+        var blockStorageClient = blockStorageClientFactory.getBlockStorage();
 
         // Create a new file upload handler
         JakartaServletFileUpload upload = new JakartaServletFileUpload();
@@ -41,20 +48,27 @@ public class FileController {
             if (item.isFormField()) {
                 log.info("Form field " + name + " detected.");
             } else {
-                int blockId = 1;
-                var bytes = stream.readNBytes(1024 * 1024);
-                while (bytes.length > 0) {
-                    log.info("Read block " + blockId + " with size " + bytes.length);
-                    bytes = stream.readNBytes(1 * 1024 * 1024);
-                    blockId += 1;
+                var blockIds = new ArrayList<String>();
+                while (true) {
+                    var bytes = stream.readNBytes(1 * 1024 * 1024);
+                    if (bytes.length == 0) {
+                        break;
+                    }
                     var saveRequest = BlockSaveRequest.newBuilder()
                             .setBlockContent(ByteString.copyFrom(bytes))
                             .build();
                     var saveResponse = blockStorageClient.save(saveRequest);
+                    blockIds.add(saveResponse.getBlockId());
                     log.info("Saved block " + saveResponse.getBlockId());
                 }
 
-                log.info("File field " + name + " with file name " + item.getName() + " detected.");
+                var fileSaveRequest = FileSaveRequest.newBuilder()
+                        .addAllBlockIds(blockIds)
+                        .setFileName(item.getName())
+                        .build();
+                var fileSaveResponse = metaStorageClientFactory.getMetaStorage().save(fileSaveRequest);
+
+                log.info("Saved file with ID " + fileSaveResponse.getFileId());
             }
         });
 

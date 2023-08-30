@@ -4,6 +4,7 @@ FROM maven:3.9-eclipse-temurin-20 as deps
 WORKDIR /opt/app
 COPY common/pom.xml common/pom.xml
 COPY blockstorage/pom.xml blockstorage/pom.xml
+COPY metadata/pom.xml metadata/pom.xml
 COPY web/pom.xml web/pom.xml
 
 # you get the idea:

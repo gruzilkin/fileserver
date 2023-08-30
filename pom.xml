@@ -12,6 +12,7 @@
         <module>common</module>
         <module>web</module>
         <module>blockstorage</module>
+        <module>metadata</module>
     </modules>
 
     <properties>

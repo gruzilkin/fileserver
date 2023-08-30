@@ -6,16 +6,38 @@ services:
     ports:
       - "9042:9042"
 
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=fileserver
+    restart: always
+
   blockstorage:
     build:
       dockerfile: blockstorage.dockerfile
-    ports:
-      - "9090:9090"
     environment:
       - CASSANDRA_CONTACT_POINTS=cassandra
     restart: always
     depends_on:
       - cassandra
+
+  metastorage:
+    build:
+      dockerfile: metadata.dockerfile
+    ports:
+      - "9090:9090"
+    restart: always
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/fileserver
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+    depends_on:
+      - db
 
   web:
     build:
@@ -24,6 +46,7 @@ services:
       - "8080:8080"
     environment:
       - BLOCK_STORAGE_HOST=blockstorage
+      - META_STORAGE_HOST=metastorage
     restart: always
     depends_on:
       - blockstorage

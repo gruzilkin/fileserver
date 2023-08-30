@@ -25,7 +25,7 @@ WORKDIR /opt/app
 COPY --from=deps /root/.m2 /root/.m2
 COPY --from=deps /opt/app/ /opt/app
 COPY common/src /opt/app/common/src
-COPY web/src /opt/app/web/src
+COPY metadata/src /opt/app/metadata/src
 
 # use -o (--offline) if you didn't need to exclude artifacts.
 # if you have excluded artifacts, then remove -o flag
@@ -34,6 +34,6 @@ RUN mvn -B -e clean install -DskipTests=true
 # At this point, BUILDER stage should have your .jar or whatever in some path
 FROM openjdk:22-ea-jdk-slim
 WORKDIR /opt/app
-COPY --from=builder /opt/app/web/target/web-1.0.0-SNAPSHOT.jar .
-EXPOSE 8080
-CMD [ "java", "-jar", "/opt/app/web-1.0.0-SNAPSHOT.jar" ]
+COPY --from=builder /opt/app/metadata/target/metadata-1.0.0-SNAPSHOT.jar .
+EXPOSE 9090
+CMD [ "java", "-jar", "/opt/app/metadata-1.0.0-SNAPSHOT.jar" ]
