@@ -21,6 +21,10 @@ services:
       dockerfile: blockstorage.dockerfile
     environment:
       - CASSANDRA_CONTACT_POINTS=cassandra
+      - OTEL_TRACES_EXPORTER=jaeger
+      - OTEL_METRICS_EXPORTER=logging
+      - OTEL_LOGS_EXPORTER=logging
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14250
     restart: always
     depends_on:
       - cassandra
@@ -36,6 +40,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - OTEL_TRACES_EXPORTER=jaeger
+      - OTEL_METRICS_EXPORTER=logging
+      - OTEL_LOGS_EXPORTER=logging
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14250
     depends_on:
       - db
 
@@ -47,6 +55,15 @@ services:
     environment:
       - BLOCK_STORAGE_HOST=blockstorage
       - META_STORAGE_HOST=metastorage
+      - OTEL_TRACES_EXPORTER=jaeger
+      - OTEL_METRICS_EXPORTER=logging
+      - OTEL_LOGS_EXPORTER=logging
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14250
     restart: always
     depends_on:
       - blockstorage
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"

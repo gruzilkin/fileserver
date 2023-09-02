@@ -32,8 +32,9 @@ COPY web/src /opt/app/web/src
 RUN mvn -B -e clean install -DskipTests=true
 
 # At this point, BUILDER stage should have your .jar or whatever in some path
-FROM openjdk:22-ea-jdk-slim
+FROM amazoncorretto:17
 WORKDIR /opt/app
 COPY --from=builder /opt/app/web/target/web-1.0.0-SNAPSHOT.jar .
+COPY opentelemetry-javaagent.jar .
 EXPOSE 8080
-CMD [ "java", "-jar", "/opt/app/web-1.0.0-SNAPSHOT.jar" ]
+CMD [ "java", "-javaagent:/opt/app/opentelemetry-javaagent.jar", "-jar", "/opt/app/web-1.0.0-SNAPSHOT.jar" ]

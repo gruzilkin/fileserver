@@ -32,8 +32,9 @@ COPY blockstorage/src /opt/app/blockstorage/src
 RUN mvn -B -e clean install -DskipTests=true
 
 # At this point, BUILDER stage should have your .jar or whatever in some path
-FROM openjdk:22-ea-jdk-slim
+FROM amazoncorretto:17
 WORKDIR /opt/app
 COPY --from=builder /opt/app/blockstorage/target/blockstorage-1.0.0-SNAPSHOT.jar .
+COPY opentelemetry-javaagent.jar .
 EXPOSE 9090
-CMD [ "java", "-jar", "/opt/app/blockstorage-1.0.0-SNAPSHOT.jar" ]
+CMD [ "java", "-javaagent:/opt/app/opentelemetry-javaagent.jar", "-jar", "/opt/app/blockstorage-1.0.0-SNAPSHOT.jar" ]
