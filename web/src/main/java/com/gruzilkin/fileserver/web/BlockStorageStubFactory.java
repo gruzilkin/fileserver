@@ -19,4 +19,8 @@ public class BlockStorageStubFactory {
     public BlockStorageServiceGrpc.BlockStorageServiceBlockingStub getBlockStorage() {
         return BlockStorageServiceGrpc.newBlockingStub(managedChannel);
     }
+
+    public BlockStorageServiceGrpc.BlockStorageServiceFutureStub getBlockStoragAsync() {
+        return BlockStorageServiceGrpc.newFutureStub(managedChannel);
+    }
 }
