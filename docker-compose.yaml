@@ -10,21 +10,19 @@ services:
     image: postgres:14
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_DB=fileserver
+    env_file:
+      - .env.default
+      - .env
     restart: always
 
   blockstorage:
     build:
       dockerfile: blockstorage.dockerfile
+    env_file:
+      - .env.default
+      - .env
     environment:
       - CASSANDRA_CONTACT_POINTS=cassandra
-      - OTEL_TRACES_EXPORTER=jaeger
-      - OTEL_METRICS_EXPORTER=logging
-      - OTEL_LOGS_EXPORTER=logging
-      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14250
     restart: always
     depends_on:
       - cassandra
@@ -35,15 +33,14 @@ services:
     ports:
       - "9090:9090"
     restart: always
+    env_file:
+      - .env.default
+      - .env
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/fileserver
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
-      - OTEL_TRACES_EXPORTER=jaeger
-      - OTEL_METRICS_EXPORTER=logging
-      - OTEL_LOGS_EXPORTER=logging
-      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14250
     depends_on:
       - db
 
@@ -52,13 +49,12 @@ services:
       dockerfile: web.dockerfile
     ports:
       - "8080:8080"
+    env_file:
+      - .env.default
+      - .env
     environment:
       - BLOCK_STORAGE_HOST=blockstorage
       - META_STORAGE_HOST=metastorage
-      - OTEL_TRACES_EXPORTER=jaeger
-      - OTEL_METRICS_EXPORTER=logging
-      - OTEL_LOGS_EXPORTER=logging
-      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14250
     restart: always
     depends_on:
       - blockstorage
