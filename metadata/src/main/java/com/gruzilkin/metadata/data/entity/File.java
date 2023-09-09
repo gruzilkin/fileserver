@@ -12,6 +12,7 @@ public class File {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @OrderBy("sort ASC")
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "file", cascade = CascadeType.ALL)
     private List<Block> blocks;
 

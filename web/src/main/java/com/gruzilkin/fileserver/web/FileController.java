@@ -1,9 +1,8 @@
 package com.gruzilkin.fileserver.web;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-import com.gruzilkin.common.BlockSaveRequest;
-import com.gruzilkin.common.BlockSaveResponse;
-import com.gruzilkin.common.FileSaveRequest;
+import com.gruzilkin.common.*;
 import com.gruzilkin.fileserver.web.model.FileUploadResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload2.jakarta.JakartaServletFileUpload;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -30,6 +30,26 @@ public class FileController {
     public FileController(BlockStorageStubFactory blockStorageClientFactory, MetaStorageStubFactory metaStorageClientFactory) {
         this.blockStorageClientFactory = blockStorageClientFactory;
         this.metaStorageClientFactory = metaStorageClientFactory;
+    }
+
+    @GetMapping(value = "/file/{id}")
+    public StreamingResponseBody get(@PathVariable(value="id") int id) {
+        var fileReadRequest = FileReadRequest.newBuilder().setFileId(id).build();
+        var blockIds = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getBlockIdsList();
+
+        var blockStorageClient = blockStorageClientFactory.getBlockStoragAsync();
+
+        return out -> {
+            for (var blockId : blockIds) {
+                try {
+                    var request = BlockReadRequest.newBuilder().setBlockId(blockId).build();
+                    var data = blockStorageClient.read(request).get().getBlockContent().toByteArray();
+                    out.write(data);
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     @PostMapping(value = "/file")

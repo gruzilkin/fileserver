@@ -1,11 +1,14 @@
 package com.gruzilkin.metadata;
 
-import com.gruzilkin.common.FileSaveRequest;
-import com.gruzilkin.common.FileSaveResponse;
-import com.gruzilkin.common.MetaStorageServiceGrpc;
+import com.google.protobuf.Any;
+import com.google.rpc.Code;
+import com.google.rpc.ErrorInfo;
+import com.google.rpc.Status;
+import com.gruzilkin.common.*;
 import com.gruzilkin.metadata.data.entity.Block;
 import com.gruzilkin.metadata.data.entity.File;
 import com.gruzilkin.metadata.data.repository.FileRepository;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
@@ -48,5 +51,26 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
         var response = FileSaveResponse.newBuilder().setFileId(file.getId()).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void read(FileReadRequest request, StreamObserver<FileReadResponse> responseObserver) {
+        var file = fileRepository.findById(request.getFileId());
+        if (file.isEmpty()) {
+            Status status = Status.newBuilder()
+                    .setCode(Code.NOT_FOUND.getNumber())
+                    .setMessage("BlockId not found")
+                    .addDetails(Any.pack(ErrorInfo.newBuilder()
+                            .putMetadata("fileId", String.valueOf(request.getFileId()))
+                            .build()))
+                    .build();
+            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+        }
+        else {
+            var blocks = file.get().getBlocks().stream().map(Block::getStorageKey).toList();
+            var response = FileReadResponse.newBuilder().addAllBlockIds(blocks).build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     }
 }

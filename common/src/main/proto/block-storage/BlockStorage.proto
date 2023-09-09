@@ -12,6 +12,15 @@ message BlockSaveResponse {
   string blockId = 1;
 }
 
+message BlockReadRequest {
+  string blockId = 1;
+}
+
+message BlockReadResponse {
+  bytes blockContent = 1;
+}
+
 service BlockStorageService {
   rpc save(BlockSaveRequest) returns (BlockSaveResponse);
+  rpc read(BlockReadRequest) returns (BlockReadResponse);
 }

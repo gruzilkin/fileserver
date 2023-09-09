@@ -1,10 +1,14 @@
 package com.gruzilkin.blockstorage;
 
+import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
+import com.google.rpc.Code;
+import com.google.rpc.ErrorInfo;
+import com.google.rpc.Status;
 import com.gruzilkin.blockstorage.data.cassandra.Block;
 import com.gruzilkin.blockstorage.data.cassandra.repository.BlockRepository;
-import com.gruzilkin.common.BlockSaveRequest;
-import com.gruzilkin.common.BlockSaveResponse;
-import com.gruzilkin.common.BlockStorageServiceGrpc;
+import com.gruzilkin.common.*;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
@@ -52,6 +56,30 @@ public class BlockStorageService extends BlockStorageServiceGrpc.BlockStorageSer
             return DigestUtils.sha512_256Hex(request.getBlockContent().toByteArray());
         } finally {
             span.end();
+        }
+    }
+
+    @Override
+    public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> responseObserver) {
+        var key = request.getBlockId();
+        var block = blockRepository.findById(key);
+
+        if (block.isEmpty()) {
+            Status status = Status.newBuilder()
+                    .setCode(Code.NOT_FOUND.getNumber())
+                    .setMessage("BlockId not found")
+                    .addDetails(Any.pack(ErrorInfo.newBuilder()
+                            .putMetadata("blockId", key)
+                            .build()))
+                    .build();
+            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+        }
+        else {
+            var response = BlockReadResponse.newBuilder()
+                    .setBlockContent(ByteString.copyFrom(block.get().getContent()))
+                    .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
     }
 }

@@ -13,6 +13,16 @@ message FileSaveResponse {
   int64 fileId = 1;
 }
 
+message FileReadRequest {
+  int64 fileId = 1;
+}
+
+message FileReadResponse {
+  repeated string blockIds = 1;
+  string fileName = 2;
+}
+
 service MetaStorageService {
   rpc save(FileSaveRequest) returns (FileSaveResponse);
+  rpc read(FileReadRequest) returns (FileReadResponse);
 }
