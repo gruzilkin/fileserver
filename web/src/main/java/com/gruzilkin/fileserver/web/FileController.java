@@ -57,13 +57,18 @@ public class FileController {
             while (true) {
                 try {
                     var response = responses.take();
-                    log.info("read from downloader queue " + response);
                     if (response == QUEUE_FINISHED) {
                         break;
                     }
                     else {
-                        var future = (ListenableFuture<BlockReadResponse>)response;
-                        out.write(future.get().getBlockContent().toByteArray());
+                        var future = (ListenableFuture<BlockReadResponse>) response;
+                        var data = future.get().getBlockContent().toByteArray();
+                        var span = tracer.spanBuilder("write to response stream").setSpanKind(SpanKind.INTERNAL).startSpan();
+                        try (var scope = span.makeCurrent()) {
+                            out.write(data);
+                        } finally {
+                            span.end();
+                        }
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
