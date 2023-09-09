@@ -4,23 +4,22 @@ import com.google.protobuf.ByteString;
 import com.gruzilkin.common.BlockSaveRequest;
 import com.gruzilkin.common.BlockSaveResponse;
 import com.gruzilkin.common.FileSaveRequest;
+import com.gruzilkin.fileserver.web.model.FileUploadResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload2.jakarta.JakartaServletFileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
-@Controller
+@RestController
 public class FileController {
     private final Logger log = LoggerFactory.getLogger(FileController.class);
 
@@ -33,15 +32,17 @@ public class FileController {
         this.metaStorageClientFactory = metaStorageClientFactory;
     }
 
-    @RequestMapping(value = "/file", method = RequestMethod.POST)
-    public @ResponseBody String upload(HttpServletRequest request) throws Exception {
+    @PostMapping(value = "/file")
+    public FileUploadResponse upload(HttpServletRequest request) throws Exception {
         boolean isMultipart = JakartaServletFileUpload.isMultipartContent(request);
         if (!isMultipart) {
             log.info("not multipart request");
-            return "not multipart request";
+            throw new ResponseStatusException(HttpStatusCode.valueOf(400));
         }
 
         var blockStorageClient = blockStorageClientFactory.getBlockStoragAsync();
+
+        AtomicReference<FileUploadResponse> response = new AtomicReference<>();
 
         // Create a new file upload handler
         JakartaServletFileUpload upload = new JakartaServletFileUpload();
@@ -81,9 +82,14 @@ public class FileController {
                 var fileSaveResponse = metaStorageClientFactory.getMetaStorage().save(fileSaveRequest);
 
                 log.info("Saved file with ID " + fileSaveResponse.getFileId());
+                response.set(new FileUploadResponse(fileSaveResponse.getFileId()));
             }
         });
 
-        return "method finished";
+        if (response.get() == null) {
+            throw new ResponseStatusException(HttpStatusCode.valueOf(400));
+        }
+
+        return response.get();
     }
 }
