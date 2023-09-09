@@ -82,20 +82,17 @@ public class FileController {
         BlockingQueue<Object> result = new LinkedBlockingQueue<>(1);
 
         getExecutor().execute(() -> {
-            var span = tracer.spanBuilder("downloader").setSpanKind(SpanKind.INTERNAL).startSpan();
-            try (var scope = span.makeCurrent()) {
-                var blockStorageClient = blockStorageClientFactory.getBlockStoragAsync();
-
+            var blockStorageClient = blockStorageClientFactory.getBlockStoragAsync();
+            try {
                 for (var blockId : blockIds) {
                     var request = BlockReadRequest.newBuilder().setBlockId(blockId).build();
                     var future = blockStorageClient.read(request);
                     result.put(future);
                 }
                 result.put(QUEUE_FINISHED);
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            } finally {
-                span.end();
             }
         });
 
