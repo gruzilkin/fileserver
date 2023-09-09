@@ -8,3 +8,6 @@ preferably an image or something that a browser can open
 
 open a file:
 use browser to open http://localhost:8080/file/id
+
+traces can be seen in jaeger:
+http://localhost:16686/
