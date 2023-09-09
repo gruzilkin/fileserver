@@ -4,19 +4,26 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 import com.gruzilkin.common.*;
 import com.gruzilkin.fileserver.web.model.FileUploadResponse;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload2.jakarta.JakartaServletFileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.List;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
@@ -27,9 +34,17 @@ public class FileController {
 
     private final MetaStorageStubFactory metaStorageClientFactory;
 
+    private final ExecutorService executorService = Executors.newWorkStealingPool();
+
+    private final Tracer tracer = GlobalOpenTelemetry.getTracer(getClass().getName());
+
     public FileController(BlockStorageStubFactory blockStorageClientFactory, MetaStorageStubFactory metaStorageClientFactory) {
         this.blockStorageClientFactory = blockStorageClientFactory;
         this.metaStorageClientFactory = metaStorageClientFactory;
+    }
+
+    protected ExecutorService getExecutor() {
+        return Context.taskWrapping(executorService);
     }
 
     @GetMapping(value = "/file/{id}")
@@ -37,19 +52,49 @@ public class FileController {
         var fileReadRequest = FileReadRequest.newBuilder().setFileId(id).build();
         var blockIds = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getBlockIdsList();
 
-        var blockStorageClient = blockStorageClientFactory.getBlockStoragAsync();
-
+        var responses = downloader(blockIds);
         return out -> {
-            for (var blockId : blockIds) {
+            while (true) {
                 try {
-                    var request = BlockReadRequest.newBuilder().setBlockId(blockId).build();
-                    var data = blockStorageClient.read(request).get().getBlockContent().toByteArray();
-                    out.write(data);
+                    var response = responses.take();
+                    log.info("read from downloader queue " + response);
+                    if (response == QUEUE_FINISHED) {
+                        break;
+                    }
+                    else {
+                        var future = (ListenableFuture<BlockReadResponse>)response;
+                        out.write(future.get().getBlockContent().toByteArray());
+                    }
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
             }
         };
+    }
+
+    private static final Object QUEUE_FINISHED = new Object();
+    protected BlockingQueue<Object> downloader(List<String> blockIds) {
+        BlockingQueue<Object> result = new LinkedBlockingQueue<>(1);
+
+        getExecutor().execute(() -> {
+            var span = tracer.spanBuilder("downloader").setSpanKind(SpanKind.INTERNAL).startSpan();
+            try (var scope = span.makeCurrent()) {
+                var blockStorageClient = blockStorageClientFactory.getBlockStoragAsync();
+
+                for (var blockId : blockIds) {
+                    var request = BlockReadRequest.newBuilder().setBlockId(blockId).build();
+                    var future = blockStorageClient.read(request);
+                    result.put(future);
+                }
+                result.put(QUEUE_FINISHED);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } finally {
+                span.end();
+            }
+        });
+
+        return result;
     }
 
     @PostMapping(value = "/file")
