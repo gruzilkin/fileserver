@@ -13,7 +13,7 @@ message BlockSaveResponse {
 }
 
 message BlockReadRequest {
-  string blockId = 1;
+  repeated string blockId = 1;
 }
 
 message BlockReadResponse {
@@ -22,5 +22,5 @@ message BlockReadResponse {
 
 service BlockStorageService {
   rpc save(BlockSaveRequest) returns (BlockSaveResponse);
-  rpc read(BlockReadRequest) returns (BlockReadResponse);
+  rpc read(BlockReadRequest) returns (stream BlockReadResponse);
 }

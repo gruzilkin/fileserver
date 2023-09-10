@@ -9,6 +9,7 @@ import com.gruzilkin.blockstorage.data.cassandra.Block;
 import com.gruzilkin.blockstorage.data.cassandra.repository.BlockRepository;
 import com.gruzilkin.common.*;
 import io.grpc.protobuf.StatusProto;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
@@ -60,26 +61,42 @@ public class BlockStorageService extends BlockStorageServiceGrpc.BlockStorageSer
     }
 
     @Override
-    public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> responseObserver) {
-        var key = request.getBlockId();
-        var block = blockRepository.findById(key);
+    public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> observer) {
+        var responseObserver = (ServerCallStreamObserver<BlockReadResponse>)observer;
 
-        if (block.isEmpty()) {
-            Status status = Status.newBuilder()
-                    .setCode(Code.NOT_FOUND.getNumber())
-                    .setMessage("BlockId not found")
-                    .addDetails(Any.pack(ErrorInfo.newBuilder()
-                            .putMetadata("blockId", key)
-                            .build()))
-                    .build();
-            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
-        }
-        else {
+        var keys = request.getBlockIdList();
+
+        for (var key : keys) {
+            var block = blockRepository.findById(key);
+            if (block.isEmpty()) {
+                Status status = Status.newBuilder()
+                        .setCode(Code.NOT_FOUND.getNumber())
+                        .setMessage("BlockId not found")
+                        .addDetails(Any.pack(ErrorInfo.newBuilder()
+                                .putMetadata("blockId", key)
+                                .build()))
+                        .build();
+                responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+                return;
+            }
+
+            while(!responseObserver.isReady()) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    Status status = Status.newBuilder()
+                            .setCode(Code.ABORTED.getNumber())
+                            .build();
+                    responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+                    return;
+                }
+            }
+
             var response = BlockReadResponse.newBuilder()
                     .setBlockContent(ByteString.copyFrom(block.get().getContent()))
                     .build();
             responseObserver.onNext(response);
-            responseObserver.onCompleted();
         }
+        responseObserver.onCompleted();
     }
 }
