@@ -15,6 +15,13 @@ services:
       - .env
     restart: always
 
+  cache:
+    image: redis:latest
+    env_file:
+      - .env.default
+      - .env
+    restart: always
+
   blockstorage:
     build:
       dockerfile: blockstorage.dockerfile
@@ -23,9 +30,11 @@ services:
       - .env
     environment:
       - CASSANDRA_CONTACT_POINTS=cassandra
+      - SPRING_DATA_REDIS_HOST=cache
     restart: always
     depends_on:
       - cassandra
+      - cache
 
   metastorage:
     build:

@@ -4,7 +4,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.cassandra.core.mapping.Table;
 
 import java.nio.ByteBuffer;
-import java.time.Instant;
 
 @Table
 public class Block {
