@@ -4,6 +4,9 @@ import com.gruzilkin.blockstorage.data.cassandra.Block;
 import com.gruzilkin.blockstorage.data.cassandra.repository.BlockRepository;
 import com.gruzilkin.blockstorage.service.BlockStorageService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -13,6 +16,7 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,46 +41,61 @@ public class BlockStorageServiceImpl implements BlockStorageService {
 
     @Override
     public byte[] findById(String id) {
-        var data = cache.get(id, byte[].class);
-        if (data == null) {
-            var block = blockRepository.findById(id);
-            if (block.isPresent()) {
-                data = block.get().getContent().array();
+        var readBlockSpan = tracer.spanBuilder("block read").setSpanKind(SpanKind.INTERNAL).startSpan();
+        try (var readBlockScope = readBlockSpan.makeCurrent()) {
+            var data = cache.get(id, byte[].class);
+            if (data == null) {
+                var block = blockRepository.findById(id);
+                if (block.isPresent()) {
+                    data = block.get().getContent().array();
 
-                final var pinnedData = data;
-                getExecutor().execute(() -> {
-                    var span = tracer.spanBuilder("writing read-through cache").setSpanKind(SpanKind.CLIENT).startSpan();
-                    try (var scope = span.makeCurrent()) {
-                        cache.put(id, pinnedData);
-                    } finally {
-                        span.end();
-                    }
-                });
+                    final var pinnedData = data;
+                    getExecutor().execute(() -> {
+                        var span = tracer.spanBuilder("writing read-through cache").setSpanKind(SpanKind.CLIENT).startSpan();
+                        try (var scope = span.makeCurrent()) {
+                            cache.putIfAbsent(id, pinnedData);
+                        } finally {
+                            span.end();
+                        }
+                    });
+                }
             }
+            return data;
+        } finally {
+            readBlockSpan.end();
         }
-        return data;
     }
 
     @Override
-    public String save(byte[] content) {
-        var key = generateKey(content);
+    public String save(final byte[] content) {
+        var writeBlockSpan = tracer.spanBuilder("block write").setSpanKind(SpanKind.INTERNAL).startSpan();
+        try (var writeBlockScope = writeBlockSpan.makeCurrent()) {
+            var key = generateKey(content);
 
-        Block newBlock = new Block();
-        newBlock.setId(key);
-        newBlock.setContent(ByteBuffer.wrap(content));
-        newBlock = blockRepository.save(newBlock);
-
-        final var pinnedData = newBlock.getContent().array();
-        getExecutor().execute(() -> {
-            var span = tracer.spanBuilder("writing write-through cache").setSpanKind(SpanKind.CLIENT).startSpan();
-            try (var scope = span.makeCurrent()) {
-                cache.put(key, pinnedData);
-            } finally {
-                span.end();
+            if (blockRepository.existsById(key)) {
+                Span.current().addEvent("Block already exists", Attributes.of(AttributeKey.stringKey("key"), key));
+                return key;
             }
-        });
 
-        return newBlock.getId();
+            getExecutor().execute(() -> {
+                var span = tracer.spanBuilder("writing write-through cache").setSpanKind(SpanKind.CLIENT).startSpan();
+                try (var scope = span.makeCurrent()) {
+                    cache.put(key, content);
+                } finally {
+                    span.end();
+                }
+            });
+
+            var block = new Block();
+            block.setId(key);
+            block.setContent(ByteBuffer.wrap(content));
+            block.setUpdateDate(Instant.now());
+            blockRepository.save(block);
+
+            return key;
+        } finally {
+            writeBlockSpan.end();
+        }
     }
 
     private String generateKey(byte[] content) {

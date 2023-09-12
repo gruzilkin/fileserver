@@ -16,7 +16,7 @@ services:
     restart: always
 
   cache:
-    image: redis:latest
+    build: redis
     env_file:
       - .env.default
       - .env
