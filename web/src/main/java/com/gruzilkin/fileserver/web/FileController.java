@@ -1,7 +1,7 @@
 package com.gruzilkin.fileserver.web;
 
 import com.google.protobuf.ByteString;
-import com.gruzilkin.common.*;
+import com.gruzilkin.fileserver.common.*;
 import com.gruzilkin.fileserver.web.model.FileUploadResponse;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;

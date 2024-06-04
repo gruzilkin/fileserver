@@ -1,12 +1,12 @@
-package com.gruzilkin.blockstorage;
+package com.gruzilkin.fileserver.blockstorage;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import com.google.rpc.ErrorInfo;
 import com.google.rpc.Status;
-import com.gruzilkin.blockstorage.service.BlockStorageService;
-import com.gruzilkin.common.*;
+import com.gruzilkin.fileserver.blockstorage.service.BlockStorageService;
+import com.gruzilkin.fileserver.common.*;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;

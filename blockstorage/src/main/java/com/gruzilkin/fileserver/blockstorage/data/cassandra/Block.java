@@ -1,4 +1,4 @@
-package com.gruzilkin.blockstorage.data.cassandra;
+package com.gruzilkin.fileserver.blockstorage.data.cassandra;
 
 import org.springframework.data.cassandra.core.mapping.Column;
 import org.springframework.data.cassandra.core.mapping.PrimaryKey;

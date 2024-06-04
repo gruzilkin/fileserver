@@ -39,7 +39,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.gruzilkin.common</groupId>
+			<groupId>com.gruzilkin.fileserver</groupId>
 			<artifactId>common</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>

@@ -1,4 +1,4 @@
-package com.gruzilkin.blockstorage.service;
+package com.gruzilkin.fileserver.blockstorage.service;
 
 public interface BlockStorageService {
     byte[] findById(String id);

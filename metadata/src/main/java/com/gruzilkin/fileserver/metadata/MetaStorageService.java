@@ -1,13 +1,13 @@
-package com.gruzilkin.metadata;
+package com.gruzilkin.fileserver.metadata;
 
 import com.google.protobuf.Any;
 import com.google.rpc.Code;
 import com.google.rpc.ErrorInfo;
 import com.google.rpc.Status;
-import com.gruzilkin.common.*;
-import com.gruzilkin.metadata.data.entity.Block;
-import com.gruzilkin.metadata.data.entity.File;
-import com.gruzilkin.metadata.data.repository.FileRepository;
+import com.gruzilkin.fileserver.common.*;
+import com.gruzilkin.fileserver.metadata.data.repository.FileRepository;
+import com.gruzilkin.fileserver.metadata.data.entity.Block;
+import com.gruzilkin.fileserver.metadata.data.entity.File;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.common.Attributes;

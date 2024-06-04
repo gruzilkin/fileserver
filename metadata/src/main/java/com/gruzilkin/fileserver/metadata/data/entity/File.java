@@ -1,4 +1,4 @@
-package com.gruzilkin.metadata.data.entity;
+package com.gruzilkin.fileserver.metadata.data.entity;
 
 
 import jakarta.persistence.*;

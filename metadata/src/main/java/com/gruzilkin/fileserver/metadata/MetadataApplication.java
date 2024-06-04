@@ -1,4 +1,4 @@
-package com.gruzilkin.metadata;
+package com.gruzilkin.fileserver.metadata;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;

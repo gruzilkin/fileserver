@@ -8,7 +8,7 @@
 		<version>3.1.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.gruzilkin</groupId>
+	<groupId>com.gruzilkin.fileserver</groupId>
 	<artifactId>metadata</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>metadata</name>
@@ -45,7 +45,7 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.gruzilkin.common</groupId>
+			<groupId>com.gruzilkin.fileserver</groupId>
 			<artifactId>common</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
@@ -61,7 +61,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.gruzilkin.metadata.MetadataApplication</mainClass>
+					<mainClass>com.gruzilkin.fileserver.metadata.MetadataApplication</mainClass>
 					<layout>JAR</layout>
 				</configuration>
 				<executions>

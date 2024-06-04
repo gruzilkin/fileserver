@@ -1,8 +1,8 @@
-package com.gruzilkin.blockstorage.service.impl;
+package com.gruzilkin.fileserver.blockstorage.service.impl;
 
-import com.gruzilkin.blockstorage.data.cassandra.Block;
-import com.gruzilkin.blockstorage.data.cassandra.repository.BlockRepository;
-import com.gruzilkin.blockstorage.service.BlockStorageService;
+import com.gruzilkin.fileserver.blockstorage.data.cassandra.Block;
+import com.gruzilkin.fileserver.blockstorage.data.cassandra.repository.BlockRepository;
+import com.gruzilkin.fileserver.blockstorage.service.BlockStorageService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
