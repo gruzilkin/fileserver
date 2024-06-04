@@ -72,30 +72,22 @@ public class BlockStorageServiceImpl implements BlockStorageService {
         var writeBlockSpan = tracer.spanBuilder("block write").setSpanKind(SpanKind.INTERNAL).startSpan();
         try (var writeBlockScope = writeBlockSpan.makeCurrent()) {
             var key = UUID.randomUUID().toString();
-
-            if (blockRepository.existsById(key)) {
-                Span.current().addEvent("Block already exists", Attributes.of(AttributeKey.stringKey("key"), key));
-                return key;
-            }
-
-            getExecutor().execute(() -> {
-                var span = tracer.spanBuilder("writing write-through cache").setSpanKind(SpanKind.CLIENT).startSpan();
-                try (var scope = span.makeCurrent()) {
-                    cache.put(key, content);
-                } finally {
-                    span.end();
-                }
-            });
-
-            var block = new Block();
-            block.setId(key);
-            block.setContent(ByteBuffer.wrap(content));
-            block.setUpdateDate(Instant.now());
-            blockRepository.save(block);
-
+            blockRepository.saveWithTtl(key, ByteBuffer.wrap(content), Instant.now(), 10);
             return key;
         } finally {
             writeBlockSpan.end();
+        }
+    }
+
+    @Override
+    public void commit(String id) {
+        var writeCommitSpan = tracer.spanBuilder("block write").setSpanKind(SpanKind.INTERNAL).startSpan();
+        try (var writeBlockScope = writeCommitSpan.makeCurrent()) {
+            var block = blockRepository.findById(id);
+            blockRepository.deleteById(id);
+            blockRepository.save(block.get());
+        } finally {
+            writeCommitSpan.end();
         }
     }
 

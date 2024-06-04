@@ -2,6 +2,8 @@ syntax = "proto3";
 option java_multiple_files = true;
 option java_package = "com.gruzilkin.fileserver.common";
 
+import "google/protobuf/empty.proto";
+
 package blockstorage;
 
 message BlockSaveRequest {
@@ -20,7 +22,12 @@ message BlockReadResponse {
   bytes blockContent = 1;
 }
 
+message BlockCommitRequest {
+  repeated string blockId = 1;
+}
+
 service BlockStorageService {
   rpc save(BlockSaveRequest) returns (BlockSaveResponse);
   rpc read(BlockReadRequest) returns (stream BlockReadResponse);
+  rpc commit(BlockCommitRequest) returns (google.protobuf.Empty);
 }

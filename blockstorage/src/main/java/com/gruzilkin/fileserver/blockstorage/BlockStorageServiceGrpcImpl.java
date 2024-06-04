@@ -2,6 +2,7 @@ package com.gruzilkin.fileserver.blockstorage;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Empty;
 import com.google.rpc.Code;
 import com.google.rpc.ErrorInfo;
 import com.google.rpc.Status;
@@ -22,6 +23,13 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
 
     public BlockStorageServiceGrpcImpl(BlockStorageService blockStorageService) {
         this.blockStorageService = blockStorageService;
+    }
+
+    @Override
+    public void commit(BlockCommitRequest request, StreamObserver<Empty> responseObserver) {
+        request.getBlockIdList().forEach(blockStorageService::commit);
+        responseObserver.onNext(Empty.newBuilder().build());
+        responseObserver.onCompleted();
     }
 
     @Override

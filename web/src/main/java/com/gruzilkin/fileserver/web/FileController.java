@@ -117,6 +117,8 @@ public class FileController {
                         .build();
                 var fileSaveResponse = metaStorageClientFactory.getMetaStorage().save(fileSaveRequest);
 
+                blockStorageClientFactory.getBlockStorage().commit(BlockCommitRequest.newBuilder().addAllBlockId(blockIds).build());
+
                 log.info("Saved file with ID " + fileSaveResponse.getFileId());
                 response.set(new FileUploadResponse(fileSaveResponse.getFileId()));
             }
