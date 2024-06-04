@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -70,7 +71,7 @@ public class BlockStorageServiceImpl implements BlockStorageService {
     public String save(final byte[] content) {
         var writeBlockSpan = tracer.spanBuilder("block write").setSpanKind(SpanKind.INTERNAL).startSpan();
         try (var writeBlockScope = writeBlockSpan.makeCurrent()) {
-            var key = generateKey(content);
+            var key = UUID.randomUUID().toString();
 
             if (blockRepository.existsById(key)) {
                 Span.current().addEvent("Block already exists", Attributes.of(AttributeKey.stringKey("key"), key));
