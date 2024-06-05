@@ -14,7 +14,9 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,10 +27,14 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
 
     private final FileRepository fileRepository;
 
-    public MetaStorageService(FileRepository fileRepository) {
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
+    public MetaStorageService(FileRepository fileRepository, KafkaTemplate<String, String> kafkaTemplate) {
         this.fileRepository = fileRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
+    @Transactional
     @Override
     public void save(FileSaveRequest request, StreamObserver<FileSaveResponse> responseObserver) {
         var blockKeys = request.getBlockIdsList();
@@ -42,13 +48,18 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
             blocks.add(new Block(file, sort++, blockKey));
         }
         file.setBlocks(blocks);
-        file = fileRepository.save(file);
+
+        var fileId = kafkaTemplate.executeInTransaction(kafkaOperations -> {
+            var savedFile = fileRepository.save(file);
+            blockKeys.forEach(key -> kafkaOperations.send("block-created", key));
+            return savedFile.getId();
+        });
 
         Span.current()
-                .addEvent("saved file", Attributes.builder().put("file_id", file.getId())
+                .addEvent("saved file", Attributes.builder().put("file_id", fileId)
                 .build());
 
-        var response = FileSaveResponse.newBuilder().setFileId(file.getId()).build();
+        var response = FileSaveResponse.newBuilder().setFileId(fileId).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
