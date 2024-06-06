@@ -34,32 +34,31 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    @Transactional
+    @Transactional("kafkaTransactionManager")
     @Override
     public void save(FileSaveRequest request, StreamObserver<FileSaveResponse> responseObserver) {
-        var blockKeys = request.getBlockIdsList();
-
-        log.info("Registering " + request.getFileName() + " with block IDs: " + String.join(", ", blockKeys));
+        var blockKeys = request.getBlocksList().stream().map(BlockDescription::getBlockId).toList();
+        var blockHashes = request.getBlocksList().stream().map(BlockDescription::getHash).toList();
+        log.info("Registering " + request.getFileName()
+                + " with block IDs: " + String.join(", ", blockKeys)
+                + " and hashes: " + String.join(", ", blockHashes));
 
         int sort = 1;
         File file = new File();
         List<Block> blocks = new ArrayList<>();
-        for (var blockKey : blockKeys) {
-            blocks.add(new Block(file, sort++, blockKey));
+        for (var block : request.getBlocksList()) {
+            blocks.add(new Block(block.getBlockId(), file, block.getHash(), sort++));
         }
         file.setBlocks(blocks);
+        file = fileRepository.save(file);
 
-        var fileId = kafkaTemplate.executeInTransaction(kafkaOperations -> {
-            var savedFile = fileRepository.save(file);
-            blockKeys.forEach(key -> kafkaOperations.send("block-created", key));
-            return savedFile.getId();
-        });
+        request.getBlocksList().forEach(b -> kafkaTemplate.send("block-created", b.getHash(), b.getBlockId()));
 
         Span.current()
-                .addEvent("saved file", Attributes.builder().put("file_id", fileId)
+                .addEvent("saved file", Attributes.builder().put("file_id", file.getId())
                 .build());
 
-        var response = FileSaveResponse.newBuilder().setFileId(fileId).build();
+        var response = FileSaveResponse.newBuilder().setFileId(file.getId()).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -78,8 +77,8 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
             responseObserver.onError(StatusProto.toStatusRuntimeException(status));
         }
         else {
-            var blocks = file.get().getBlocks().stream().map(Block::getStorageKey).toList();
-            var response = FileReadResponse.newBuilder().addAllBlockIds(blocks).build();
+            var hashes = file.get().getBlocks().stream().map(Block::getHash).toList();
+            var response = FileReadResponse.newBuilder().addAllBlockHashes(hashes).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }

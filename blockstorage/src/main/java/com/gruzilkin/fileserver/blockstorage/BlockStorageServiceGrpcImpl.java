@@ -26,19 +26,13 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
     }
 
     @Override
-    public void commit(BlockCommitRequest request, StreamObserver<Empty> responseObserver) {
-        request.getBlockIdList().forEach(blockStorageService::commit);
-        responseObserver.onNext(Empty.newBuilder().build());
-        responseObserver.onCompleted();
-    }
-
-    @Override
     public void save(BlockSaveRequest request, StreamObserver<BlockSaveResponse> responseObserver) {
         log.info("Received block of size " + request.getBlockContent().size());
-        var blockId = blockStorageService.save(request.getBlockContent().toByteArray());
+        var block = blockStorageService.save(request.getBlockContent().toByteArray());
 
         var response = BlockSaveResponse.newBuilder()
-                .setBlockId(blockId)
+                .setBlockId(block.id)
+                .setHash(block.hash)
                 .build();
 
         responseObserver.onNext(response);
@@ -49,16 +43,16 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
     public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> observer) {
         var responseObserver = (ServerCallStreamObserver<BlockReadResponse>)observer;
 
-        var keys = request.getBlockIdList();
+        var hashes = request.getBlockHashList();
 
-        for (var key : keys) {
-            var data = blockStorageService.findById(key);
+        for (var hash : hashes) {
+            var data = blockStorageService.findById(hash);
             if (data == null) {
                 Status status = Status.newBuilder()
                         .setCode(Code.NOT_FOUND.getNumber())
-                        .setMessage("BlockId not found")
+                        .setMessage("Block not found")
                         .addDetails(Any.pack(ErrorInfo.newBuilder()
-                                .putMetadata("blockId", key)
+                                .putMetadata("hash", hash)
                                 .build()))
                         .build();
                 responseObserver.onError(StatusProto.toStatusRuntimeException(status));

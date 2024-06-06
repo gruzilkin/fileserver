@@ -5,35 +5,34 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "blocks")
 public class Block {
-
-    public Block(File file, int sort, String storageKey) {
+    public Block(String id, File file, String hash, int sort) {
+        this.id = id;
         this.file = file;
+        this.hash = hash;
         this.sort = sort;
-        this.storageKey = storageKey;
     }
 
     public Block() {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private String id;
 
     @ManyToOne
     @JoinColumn(name = "file_id", nullable = false)
     private File file;
 
+    @Column(name = "hash", nullable = false)
+    private String hash;
+
     @Column(name = "sort", nullable = false)
     private int sort;
 
-    @Column(name = "storage_key", nullable = false)
-    private String storageKey;
-
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -45,19 +44,19 @@ public class Block {
         this.file = file;
     }
 
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
     public int getSort() {
         return sort;
     }
 
     public void setSort(int sort) {
         this.sort = sort;
-    }
-
-    public String getStorageKey() {
-        return storageKey;
-    }
-
-    public void setStorageKey(String storageKey) {
-        this.storageKey = storageKey;
     }
 }

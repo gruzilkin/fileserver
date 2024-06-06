@@ -51,11 +51,11 @@ public class FileController {
     @GetMapping(value = "/file/{id}")
     public StreamingResponseBody get(@PathVariable(value="id") int id) {
         var fileReadRequest = FileReadRequest.newBuilder().setFileId(id).build();
-        var blockIds = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getBlockIdsList();
+        var blockHashes = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getBlockHashesList();
         var blockStorageClient = blockStorageClientFactory.getBlockStorage();
 
         return out -> {
-            BlockReadRequest request = BlockReadRequest.newBuilder().addAllBlockId(blockIds).build();
+            BlockReadRequest request = BlockReadRequest.newBuilder().addAllBlockHash(blockHashes).build();
             var response = blockStorageClient.read(request);
 
             response.forEachRemaining(block -> {
@@ -101,18 +101,19 @@ public class FileController {
                     futures.add(saveResponseFuture);
                 }
 
-                var blockIds = new ArrayList<String>();
-                for (var future : futures) {
+                var blockDescriptions = futures.stream().map(f -> {
                     try {
-                        var saveResponse = future.get();
-                        blockIds.add(saveResponse.getBlockId());
-                    } catch (InterruptedException | ExecutionException e) {
+                        return f.get();
+                    } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                }
+                }).map(blockSaveResponse -> BlockDescription.newBuilder()
+                        .setBlockId(blockSaveResponse.getBlockId())
+                        .setHash(blockSaveResponse.getHash()).build())
+                .toList();
 
                 var fileSaveRequest = FileSaveRequest.newBuilder()
-                        .addAllBlockIds(blockIds)
+                        .addAllBlocks(blockDescriptions)
                         .setFileName(item.getName())
                         .build();
                 var fileSaveResponse = metaStorageClientFactory.getMetaStorage().save(fileSaveRequest);

@@ -7,13 +7,16 @@ import org.springframework.data.cassandra.core.mapping.Table;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 
-@Table
-public class Block {
+@Table("hot_block")
+public class HotBlock {
     @PrimaryKey
     private String id;
 
     @Column
     private ByteBuffer content;
+
+    @Column
+    private String hash;
 
     @Column("update_date")
     private Instant updateDate;
@@ -33,6 +36,10 @@ public class Block {
     public void setContent(ByteBuffer content) {
         this.content = content;
     }
+
+    public String getHash() { return hash; }
+
+    public void setHash(String hash) { this.hash = hash; }
 
     public Instant getUpdateDate() {
         return updateDate;
