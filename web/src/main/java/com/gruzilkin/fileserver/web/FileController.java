@@ -51,7 +51,7 @@ public class FileController {
     @GetMapping(value = "/file/{id}")
     public StreamingResponseBody get(@PathVariable(value="id") int id) {
         var fileReadRequest = FileReadRequest.newBuilder().setFileId(id).build();
-        var blockHashes = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getBlockHashesList();
+        var blockHashes = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getHashesList();
         var blockStorageClient = blockStorageClientFactory.getBlockStorage();
 
         return out -> {
@@ -108,7 +108,7 @@ public class FileController {
                         throw new RuntimeException(e);
                     }
                 }).map(blockSaveResponse -> BlockDescription.newBuilder()
-                        .setBlockId(blockSaveResponse.getId())
+                        .setId(blockSaveResponse.getId())
                         .setHash(blockSaveResponse.getHash()).build())
                 .toList();
 
