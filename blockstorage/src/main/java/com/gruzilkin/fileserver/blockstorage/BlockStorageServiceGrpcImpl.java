@@ -27,11 +27,11 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
 
     @Override
     public void save(BlockSaveRequest request, StreamObserver<BlockSaveResponse> responseObserver) {
-        log.info("Received block of size " + request.getBlockContent().size());
-        var block = blockStorageService.save(request.getBlockContent().toByteArray());
+        log.info("Received block of size " + request.getContent().size());
+        var block = blockStorageService.save(request.getContent().toByteArray());
 
         var response = BlockSaveResponse.newBuilder()
-                .setBlockId(block.id)
+                .setId(block.id)
                 .setHash(block.hash)
                 .build();
 
@@ -43,7 +43,7 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
     public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> observer) {
         var responseObserver = (ServerCallStreamObserver<BlockReadResponse>)observer;
 
-        var hashes = request.getBlockHashList();
+        var hashes = request.getHashList();
 
         for (var hash : hashes) {
             var data = blockStorageService.findById(hash);
@@ -72,7 +72,7 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
             }
 
             var response = BlockReadResponse.newBuilder()
-                    .setBlockContent(ByteString.copyFrom(data))
+                    .setContent(ByteString.copyFrom(data))
                     .build();
             responseObserver.onNext(response);
         }

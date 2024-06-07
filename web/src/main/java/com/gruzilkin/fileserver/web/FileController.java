@@ -55,12 +55,12 @@ public class FileController {
         var blockStorageClient = blockStorageClientFactory.getBlockStorage();
 
         return out -> {
-            BlockReadRequest request = BlockReadRequest.newBuilder().addAllBlockHash(blockHashes).build();
+            BlockReadRequest request = BlockReadRequest.newBuilder().addAllHash(blockHashes).build();
             var response = blockStorageClient.read(request);
 
             response.forEachRemaining(block -> {
                 try {
-                    out.write(block.getBlockContent().toByteArray());
+                    out.write(block.getContent().toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -95,7 +95,7 @@ public class FileController {
                         break;
                     }
                     var saveRequest = BlockSaveRequest.newBuilder()
-                            .setBlockContent(ByteString.copyFrom(bytes))
+                            .setContent(ByteString.copyFrom(bytes))
                             .build();
                     var saveResponseFuture = blockStorageClient.save(saveRequest);
                     futures.add(saveResponseFuture);
@@ -108,7 +108,7 @@ public class FileController {
                         throw new RuntimeException(e);
                     }
                 }).map(blockSaveResponse -> BlockDescription.newBuilder()
-                        .setBlockId(blockSaveResponse.getBlockId())
+                        .setBlockId(blockSaveResponse.getId())
                         .setHash(blockSaveResponse.getHash()).build())
                 .toList();
 
