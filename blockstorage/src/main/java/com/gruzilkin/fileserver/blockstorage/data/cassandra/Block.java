@@ -7,16 +7,27 @@ import org.springframework.data.cassandra.core.mapping.Table;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 
-@Table("cold_block")
-public class ColdBlock {
+@Table("block")
+public class Block {
     @PrimaryKey
-    private String hash;
+    private String id;
 
     @Column
     private ByteBuffer content;
 
+    @Column
+    private String hash;
+
     @Column("update_date")
     private Instant updateDate;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public ByteBuffer getContent() {
         return content;

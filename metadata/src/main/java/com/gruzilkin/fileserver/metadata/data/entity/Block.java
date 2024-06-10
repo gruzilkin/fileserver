@@ -5,10 +5,9 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "blocks")
 public class Block {
-    public Block(String id, File file, String hash, int sort) {
+    public Block(String id, File file, int sort) {
         this.id = id;
         this.file = file;
-        this.hash = hash;
         this.sort = sort;
     }
 
@@ -21,9 +20,6 @@ public class Block {
     @ManyToOne
     @JoinColumn(name = "file_id", nullable = false)
     private File file;
-
-    @Column(name = "hash", nullable = false)
-    private String hash;
 
     @Column(name = "sort", nullable = false)
     private int sort;
@@ -42,14 +38,6 @@ public class Block {
 
     public void setFile(File file) {
         this.file = file;
-    }
-
-    public String getHash() {
-        return hash;
-    }
-
-    public void setHash(String hash) {
-        this.hash = hash;
     }
 
     public int getSort() {

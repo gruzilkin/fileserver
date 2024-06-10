@@ -37,22 +37,20 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
     @Transactional("kafkaTransactionManager")
     @Override
     public void save(FileSaveRequest request, StreamObserver<FileSaveResponse> responseObserver) {
-        var blockKeys = request.getBlocksList().stream().map(BlockDescription::getId).toList();
-        var blockHashes = request.getBlocksList().stream().map(BlockDescription::getHash).toList();
+        var ids = request.getIdsList().stream().toList();
         log.info("Registering " + request.getFileName()
-                + " with block IDs: " + String.join(", ", blockKeys)
-                + " and hashes: " + String.join(", ", blockHashes));
+                + " with block IDs: " + String.join(", ", ids));
 
         int sort = 1;
         File file = new File();
         List<Block> blocks = new ArrayList<>();
-        for (var block : request.getBlocksList()) {
-            blocks.add(new Block(block.getId(), file, block.getHash(), sort++));
+        for (var id : ids) {
+            blocks.add(new Block(id, file, sort++));
         }
         file.setBlocks(blocks);
         file = fileRepository.save(file);
 
-        request.getBlocksList().forEach(b -> kafkaTemplate.send("block-created", b.getHash(), b.getId()));
+        ids.forEach(id -> kafkaTemplate.send("block-created", id));
 
         Span.current()
                 .addEvent("saved file", Attributes.builder().put("file_id", file.getId())
@@ -77,8 +75,8 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
             responseObserver.onError(StatusProto.toStatusRuntimeException(status));
         }
         else {
-            var hashes = file.get().getBlocks().stream().map(Block::getHash).toList();
-            var response = FileReadResponse.newBuilder().addAllHashes(hashes).build();
+            var ids = file.get().getBlocks().stream().map(Block::getId).toList();
+            var response = FileReadResponse.newBuilder().addAllIds(ids).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }

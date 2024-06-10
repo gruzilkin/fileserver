@@ -12,11 +12,10 @@ message BlockSaveRequest {
 
 message BlockSaveResponse {
   string id = 1;
-  string hash = 2;
 }
 
 message BlockReadRequest {
-  repeated string hash = 1;
+  repeated string id = 1;
 }
 
 message BlockReadResponse {

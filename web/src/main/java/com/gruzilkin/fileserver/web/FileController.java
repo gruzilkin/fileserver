@@ -51,11 +51,11 @@ public class FileController {
     @GetMapping(value = "/file/{id}")
     public StreamingResponseBody get(@PathVariable(value="id") int id) {
         var fileReadRequest = FileReadRequest.newBuilder().setFileId(id).build();
-        var blockHashes = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getHashesList();
+        var blockIds = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getIdsList();
         var blockStorageClient = blockStorageClientFactory.getBlockStorage();
 
         return out -> {
-            BlockReadRequest request = BlockReadRequest.newBuilder().addAllHash(blockHashes).build();
+            BlockReadRequest request = BlockReadRequest.newBuilder().addAllId(blockIds).build();
             var response = blockStorageClient.read(request);
 
             response.forEachRemaining(block -> {
@@ -101,19 +101,16 @@ public class FileController {
                     futures.add(saveResponseFuture);
                 }
 
-                var blockDescriptions = futures.stream().map(f -> {
+                var ids = futures.stream().map(f -> {
                     try {
-                        return f.get();
+                        return f.get().getId();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                }).map(blockSaveResponse -> BlockDescription.newBuilder()
-                        .setId(blockSaveResponse.getId())
-                        .setHash(blockSaveResponse.getHash()).build())
-                .toList();
+                }).toList();
 
                 var fileSaveRequest = FileSaveRequest.newBuilder()
-                        .addAllBlocks(blockDescriptions)
+                        .addAllIds(ids)
                         .setFileName(item.getName())
                         .build();
                 var fileSaveResponse = metaStorageClientFactory.getMetaStorage().save(fileSaveRequest);

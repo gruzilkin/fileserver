@@ -4,13 +4,8 @@ option java_package = "com.gruzilkin.fileserver.common";
 
 package metastorage;
 
-message BlockDescription {
-  string id = 1;
-  string hash = 2;
-}
-
 message FileSaveRequest {
-  repeated BlockDescription blocks = 1;
+  repeated string ids = 1;
   string fileName = 2;
 }
 
@@ -23,7 +18,7 @@ message FileReadRequest {
 }
 
 message FileReadResponse {
-  repeated string hashes = 1;
+  repeated string ids = 1;
   string fileName = 2;
 }
 

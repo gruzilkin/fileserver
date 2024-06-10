@@ -32,7 +32,6 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
 
         var response = BlockSaveResponse.newBuilder()
                 .setId(block.id)
-                .setHash(block.hash)
                 .build();
 
         responseObserver.onNext(response);
@@ -43,16 +42,16 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
     public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> observer) {
         var responseObserver = (ServerCallStreamObserver<BlockReadResponse>)observer;
 
-        var hashes = request.getHashList();
+        var ids = request.getIdList();
 
-        for (var hash : hashes) {
-            var data = blockStorageService.findById(hash);
+        for (var id : ids) {
+            var data = blockStorageService.findById(id);
             if (data == null) {
                 Status status = Status.newBuilder()
                         .setCode(Code.NOT_FOUND.getNumber())
                         .setMessage("Block not found")
                         .addDetails(Any.pack(ErrorInfo.newBuilder()
-                                .putMetadata("hash", hash)
+                                .putMetadata("id", id)
                                 .build()))
                         .build();
                 responseObserver.onError(StatusProto.toStatusRuntimeException(status));
