@@ -5,6 +5,11 @@ services:
     image: cassandra:4
     ports:
       - "9042:9042"
+    healthcheck:
+      test: [ "CMD", "cqlsh", "-e", "describe keyspaces" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
 
   db:
     image: postgres:14
@@ -72,8 +77,10 @@ services:
       - SPRING_KAFKA_CONSUMER_GROUP_ID=fileserver
     restart: always
     depends_on:
-      - cassandra
-      - cache
+      cassandra:
+        condition: service_healthy
+      cache:
+        condition: service_started
 
   metastorage:
     build:
