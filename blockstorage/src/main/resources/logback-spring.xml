@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <appender name="GELF" class="biz.paluch.logging.gelf.logback.GelfLogbackAppender">
+        <host>${GELF_HOST:-udp://localhost:12201}</host>
+        <extractStackTrace>true</extractStackTrace>
+        <includeFullMdc>true</includeFullMdc>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="GELF"/>
+    </root>
+</configuration>

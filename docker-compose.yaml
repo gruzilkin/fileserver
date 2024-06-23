@@ -5,6 +5,9 @@ services:
     image: cassandra:4
     ports:
       - "9042:9042"
+    environment:
+      - "MAX_HEAP_SIZE=256M"
+      - "HEAP_NEWSIZE=64M"
     healthcheck:
       test: [ "CMD", "cqlsh", "-e", "describe keyspaces" ]
       interval: 5s
@@ -78,6 +81,7 @@ services:
       - CASSANDRA_CONTACT_POINTS=cassandra
       - SPRING_DATA_REDIS_HOST=cache
       - SPRING_KAFKA_CONSUMER_GROUP_ID=fileserver
+      - GELF_HOST=udp://graylog:12201
     restart: always
     depends_on:
       cassandra:
@@ -100,6 +104,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
       - SPRING_KAFKA_CONSUMER_GROUP_ID=fileserver
+      - GELF_HOST=udp://graylog:12201
     depends_on:
       - db
 
@@ -114,6 +119,7 @@ services:
     environment:
       - BLOCK_STORAGE_HOST=blockstorage
       - META_STORAGE_HOST=metastorage
+      - GELF_HOST=udp://graylog:12201
     restart: always
     depends_on:
       - blockstorage
@@ -136,3 +142,51 @@ services:
       - "8888:8888" # health check extension
     depends_on:
       - jaeger
+
+  mongodb:
+    image: "mongo:6.0.14"
+    volumes:
+      - "mongodb_data:/data/db"
+    restart: "on-failure"
+
+  opensearch:
+    image: "opensearchproject/opensearch:2.12.0"
+    environment:
+      - "discovery.type=single-node"
+      - "action.auto_create_index=false"
+      - "plugins.security.ssl.http.enabled=false"
+      - "plugins.security.disabled=true"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=o5i7jvHhLgXRq+#bxDkGsqh4D-0odYaR"
+    volumes:
+      - "os_data:/usr/share/opensearch/data"
+    restart: "on-failure"
+
+  graylog:
+    image: "${GRAYLOG_IMAGE:-graylog/graylog:6.0.3}"
+    depends_on:
+      opensearch:
+        condition: "service_started"
+      mongodb:
+        condition: "service_started"
+    entrypoint: "/usr/bin/tini -- wait-for-it opensearch:9200 --  /docker-entrypoint.sh"
+    environment:
+      GRAYLOG_NODE_ID_FILE: "/usr/share/graylog/data/config/node-id"
+      GRAYLOG_PASSWORD_SECRET: "verylongsecretmorethan16characters"
+      GRAYLOG_ROOT_PASSWORD_SHA2: "29beb3fec2ab42ed90f1a28180e5fae6abfdafdab23c6efd4cbcbf6c26c814c5"
+      GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:9000"
+      GRAYLOG_ELASTICSEARCH_HOSTS: "http://opensearch:9200"
+      GRAYLOG_MONGODB_URI: "mongodb://mongodb:27017/graylog"
+    ports:
+      - "9000:9000/tcp"   # Server API
+      - "12201:12201/tcp" # GELF TCP
+      - "12201:12201/udp" # GELF UDP
+    volumes:
+      - "graylog_data:/usr/share/graylog/data/data"
+      - "graylog_journal:/usr/share/graylog/data/journal"
+    restart: "on-failure"
+
+volumes:
+  mongodb_data:
+  os_data:
+  graylog_data:
+  graylog_journal:
