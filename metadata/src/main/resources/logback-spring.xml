@@ -3,9 +3,11 @@
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
 
     <appender name="GELF" class="biz.paluch.logging.gelf.logback.GelfLogbackAppender">
+        <version>1.1</version>
         <host>${GELF_HOST:-udp://localhost:12201}</host>
         <extractStackTrace>true</extractStackTrace>
         <includeFullMdc>true</includeFullMdc>
+        <includeRootCauseData>true</includeRootCauseData>
     </appender>
 
     <root level="INFO">
