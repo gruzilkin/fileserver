@@ -122,3 +122,17 @@ services:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # gRPC receiver
+      - "55681:55681" # other receivers
+      - "8888:8888" # health check extension
+    depends_on:
+      - jaeger
