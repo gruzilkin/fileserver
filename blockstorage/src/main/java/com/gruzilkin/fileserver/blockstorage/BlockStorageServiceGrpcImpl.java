@@ -1,12 +1,13 @@
-package com.gruzilkin.blockstorage;
+package com.gruzilkin.fileserver.blockstorage;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Empty;
 import com.google.rpc.Code;
 import com.google.rpc.ErrorInfo;
 import com.google.rpc.Status;
-import com.gruzilkin.blockstorage.service.BlockStorageService;
-import com.gruzilkin.common.*;
+import com.gruzilkin.fileserver.blockstorage.service.BlockStorageService;
+import com.gruzilkin.fileserver.common.*;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -26,11 +27,11 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
 
     @Override
     public void save(BlockSaveRequest request, StreamObserver<BlockSaveResponse> responseObserver) {
-        log.info("Received block of size " + request.getBlockContent().size());
-        var blockId = blockStorageService.save(request.getBlockContent().toByteArray());
+        log.info("Received block of size " + request.getContent().size());
+        var block = blockStorageService.save(request.getContent().toByteArray());
 
         var response = BlockSaveResponse.newBuilder()
-                .setBlockId(blockId)
+                .setId(block.id)
                 .build();
 
         responseObserver.onNext(response);
@@ -41,16 +42,16 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
     public void read(BlockReadRequest request, StreamObserver<BlockReadResponse> observer) {
         var responseObserver = (ServerCallStreamObserver<BlockReadResponse>)observer;
 
-        var keys = request.getBlockIdList();
+        var ids = request.getIdList();
 
-        for (var key : keys) {
-            var data = blockStorageService.findById(key);
+        for (var id : ids) {
+            var data = blockStorageService.findById(id);
             if (data == null) {
                 Status status = Status.newBuilder()
                         .setCode(Code.NOT_FOUND.getNumber())
-                        .setMessage("BlockId not found")
+                        .setMessage("Block not found")
                         .addDetails(Any.pack(ErrorInfo.newBuilder()
-                                .putMetadata("blockId", key)
+                                .putMetadata("id", id)
                                 .build()))
                         .build();
                 responseObserver.onError(StatusProto.toStatusRuntimeException(status));
@@ -70,7 +71,7 @@ public class BlockStorageServiceGrpcImpl extends BlockStorageServiceGrpc.BlockSt
             }
 
             var response = BlockReadResponse.newBuilder()
-                    .setBlockContent(ByteString.copyFrom(data))
+                    .setContent(ByteString.copyFrom(data))
                     .build();
             responseObserver.onNext(response);
         }

@@ -1,7 +1,7 @@
 package com.gruzilkin.fileserver.web;
 
 import com.google.protobuf.ByteString;
-import com.gruzilkin.common.*;
+import com.gruzilkin.fileserver.common.*;
 import com.gruzilkin.fileserver.web.model.FileUploadResponse;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
@@ -51,16 +51,16 @@ public class FileController {
     @GetMapping(value = "/file/{id}")
     public StreamingResponseBody get(@PathVariable(value="id") int id) {
         var fileReadRequest = FileReadRequest.newBuilder().setFileId(id).build();
-        var blockIds = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getBlockIdsList();
+        var blockIds = metaStorageClientFactory.getMetaStorage().read(fileReadRequest).getIdsList();
         var blockStorageClient = blockStorageClientFactory.getBlockStorage();
 
         return out -> {
-            BlockReadRequest request = BlockReadRequest.newBuilder().addAllBlockId(blockIds).build();
+            BlockReadRequest request = BlockReadRequest.newBuilder().addAllId(blockIds).build();
             var response = blockStorageClient.read(request);
 
             response.forEachRemaining(block -> {
                 try {
-                    out.write(block.getBlockContent().toByteArray());
+                    out.write(block.getContent().toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -95,24 +95,22 @@ public class FileController {
                         break;
                     }
                     var saveRequest = BlockSaveRequest.newBuilder()
-                            .setBlockContent(ByteString.copyFrom(bytes))
+                            .setContent(ByteString.copyFrom(bytes))
                             .build();
                     var saveResponseFuture = blockStorageClient.save(saveRequest);
                     futures.add(saveResponseFuture);
                 }
 
-                var blockIds = new ArrayList<String>();
-                for (var future : futures) {
+                var ids = futures.stream().map(f -> {
                     try {
-                        var saveResponse = future.get();
-                        blockIds.add(saveResponse.getBlockId());
-                    } catch (InterruptedException | ExecutionException e) {
+                        return f.get().getId();
+                    } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                }
+                }).toList();
 
                 var fileSaveRequest = FileSaveRequest.newBuilder()
-                        .addAllBlockIds(blockIds)
+                        .addAllIds(ids)
                         .setFileName(item.getName())
                         .build();
                 var fileSaveResponse = metaStorageClientFactory.getMetaStorage().save(fileSaveRequest);

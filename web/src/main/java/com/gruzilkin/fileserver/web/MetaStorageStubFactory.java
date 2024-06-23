@@ -1,6 +1,6 @@
 package com.gruzilkin.fileserver.web;
 
-import com.gruzilkin.common.MetaStorageServiceGrpc;
+import com.gruzilkin.fileserver.common.MetaStorageServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.springframework.beans.factory.annotation.Value;

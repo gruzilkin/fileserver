@@ -5,6 +5,11 @@ services:
     image: cassandra:4
     ports:
       - "9042:9042"
+    healthcheck:
+      test: [ "CMD", "cqlsh", "-e", "describe keyspaces" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
 
   db:
     image: postgres:14
@@ -22,6 +27,47 @@ services:
       - .env
     restart: always
 
+  zookeeper:
+    image: 'confluentinc/cp-zookeeper:latest'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka1:
+    image: 'confluentinc/cp-kafka:latest'
+    depends_on:
+      - zookeeper
+    env_file:
+      - .env.default
+      - .env
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+    restart: always
+
+  kafka2:
+    image: 'confluentinc/cp-kafka:latest'
+    depends_on:
+      - zookeeper
+    env_file:
+      - .env.default
+      - .env
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092
+    restart: always
+
+  kafka3:
+    image: 'confluentinc/cp-kafka:latest'
+    depends_on:
+      - zookeeper
+    env_file:
+      - .env.default
+      - .env
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9092
+    restart: always
+
   blockstorage:
     build:
       dockerfile: blockstorage.dockerfile
@@ -31,10 +77,13 @@ services:
     environment:
       - CASSANDRA_CONTACT_POINTS=cassandra
       - SPRING_DATA_REDIS_HOST=cache
+      - SPRING_KAFKA_CONSUMER_GROUP_ID=fileserver
     restart: always
     depends_on:
-      - cassandra
-      - cache
+      cassandra:
+        condition: service_healthy
+      cache:
+        condition: service_started
 
   metastorage:
     build:
@@ -50,6 +99,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_KAFKA_CONSUMER_GROUP_ID=fileserver
     depends_on:
       - db
 

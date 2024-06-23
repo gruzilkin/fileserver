@@ -1,4 +1,4 @@
-package com.gruzilkin.blockstorage;
+package com.gruzilkin.fileserver.blockstorage;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;

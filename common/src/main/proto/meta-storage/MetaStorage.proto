@@ -1,11 +1,11 @@
 syntax = "proto3";
 option java_multiple_files = true;
-option java_package = "com.gruzilkin.common";
+option java_package = "com.gruzilkin.fileserver.common";
 
 package metastorage;
 
 message FileSaveRequest {
-  repeated string blockIds = 1;
+  repeated string ids = 1;
   string fileName = 2;
 }
 
@@ -18,7 +18,7 @@ message FileReadRequest {
 }
 
 message FileReadResponse {
-  repeated string blockIds = 1;
+  repeated string ids = 1;
   string fileName = 2;
 }
 

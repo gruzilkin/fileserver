@@ -1,4 +1,4 @@
-package com.gruzilkin.metadata;
+package com.gruzilkin.fileserver.metadata;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,23 +1,25 @@
 syntax = "proto3";
 option java_multiple_files = true;
-option java_package = "com.gruzilkin.common";
+option java_package = "com.gruzilkin.fileserver.common";
+
+import "google/protobuf/empty.proto";
 
 package blockstorage;
 
 message BlockSaveRequest {
-  bytes blockContent = 1;
+  bytes content = 1;
 }
 
 message BlockSaveResponse {
-  string blockId = 1;
+  string id = 1;
 }
 
 message BlockReadRequest {
-  repeated string blockId = 1;
+  repeated string id = 1;
 }
 
 message BlockReadResponse {
-  bytes blockContent = 1;
+  bytes content = 1;
 }
 
 service BlockStorageService {

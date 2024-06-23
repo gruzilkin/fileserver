@@ -1,6 +1,6 @@
-package com.gruzilkin.metadata.data.repository;
+package com.gruzilkin.fileserver.metadata.data.repository;
 
-import com.gruzilkin.metadata.data.entity.File;
+import com.gruzilkin.fileserver.metadata.data.entity.File;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

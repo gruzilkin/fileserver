@@ -1,23 +1,21 @@
-package com.gruzilkin.metadata.data.entity;
+package com.gruzilkin.fileserver.metadata.data.entity;
 
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "blocks")
 public class Block {
-
-    public Block(File file, int sort, String storageKey) {
+    public Block(String id, File file, int sort) {
+        this.id = id;
         this.file = file;
         this.sort = sort;
-        this.storageKey = storageKey;
     }
 
     public Block() {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private String id;
 
     @ManyToOne
     @JoinColumn(name = "file_id", nullable = false)
@@ -26,14 +24,11 @@ public class Block {
     @Column(name = "sort", nullable = false)
     private int sort;
 
-    @Column(name = "storage_key", nullable = false)
-    private String storageKey;
-
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -51,13 +46,5 @@ public class Block {
 
     public void setSort(int sort) {
         this.sort = sort;
-    }
-
-    public String getStorageKey() {
-        return storageKey;
-    }
-
-    public void setStorageKey(String storageKey) {
-        this.storageKey = storageKey;
     }
 }

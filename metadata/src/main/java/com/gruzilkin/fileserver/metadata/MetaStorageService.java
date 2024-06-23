@@ -1,20 +1,22 @@
-package com.gruzilkin.metadata;
+package com.gruzilkin.fileserver.metadata;
 
 import com.google.protobuf.Any;
 import com.google.rpc.Code;
 import com.google.rpc.ErrorInfo;
 import com.google.rpc.Status;
-import com.gruzilkin.common.*;
-import com.gruzilkin.metadata.data.entity.Block;
-import com.gruzilkin.metadata.data.entity.File;
-import com.gruzilkin.metadata.data.repository.FileRepository;
+import com.gruzilkin.fileserver.common.*;
+import com.gruzilkin.fileserver.metadata.data.repository.FileRepository;
+import com.gruzilkin.fileserver.metadata.data.entity.Block;
+import com.gruzilkin.fileserver.metadata.data.entity.File;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,24 +27,30 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
 
     private final FileRepository fileRepository;
 
-    public MetaStorageService(FileRepository fileRepository) {
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
+    public MetaStorageService(FileRepository fileRepository, KafkaTemplate<String, String> kafkaTemplate) {
         this.fileRepository = fileRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
+    @Transactional("kafkaTransactionManager")
     @Override
     public void save(FileSaveRequest request, StreamObserver<FileSaveResponse> responseObserver) {
-        var blockKeys = request.getBlockIdsList();
-
-        log.info("Registering " + request.getFileName() + " with block IDs: " + String.join(", ", blockKeys));
+        var ids = request.getIdsList().stream().toList();
+        log.info("Registering " + request.getFileName()
+                + " with block IDs: " + String.join(", ", ids));
 
         int sort = 1;
         File file = new File();
         List<Block> blocks = new ArrayList<>();
-        for (var blockKey : blockKeys) {
-            blocks.add(new Block(file, sort++, blockKey));
+        for (var id : ids) {
+            blocks.add(new Block(id, file, sort++));
         }
         file.setBlocks(blocks);
         file = fileRepository.save(file);
+
+        ids.forEach(id -> kafkaTemplate.send("block-created", id));
 
         Span.current()
                 .addEvent("saved file", Attributes.builder().put("file_id", file.getId())
@@ -67,8 +75,8 @@ public class MetaStorageService extends MetaStorageServiceGrpc.MetaStorageServic
             responseObserver.onError(StatusProto.toStatusRuntimeException(status));
         }
         else {
-            var blocks = file.get().getBlocks().stream().map(Block::getStorageKey).toList();
-            var response = FileReadResponse.newBuilder().addAllBlockIds(blocks).build();
+            var ids = file.get().getBlocks().stream().map(Block::getId).toList();
+            var response = FileReadResponse.newBuilder().addAllIds(ids).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
